@@ -21,7 +21,7 @@ test.log
 *.xlsx
 
 # Compiled python files
-*.py[co]
+*.py[cod]
 
 # Packages
 *.egg
