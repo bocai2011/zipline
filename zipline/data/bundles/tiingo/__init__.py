@@ -40,6 +40,8 @@ def quandl_bundle(environ,
     ## process ticker
     bar_data = []
     asset_df = None
+    dfSplit = None
+    dfDiv = None
     sid = 0
     for ticker in tickers:
         print ("Processing sid: " + str(sid) + " Symbol: " + ticker)
@@ -47,18 +49,39 @@ def quandl_bundle(environ,
                             frequency='daily',
                             startDate=start_session.strftime("%Y-%m-%d"),
                             endDate=end_session.strftime("%Y-%m-%d"))
-        dfOHLCV = df[["open","high","low","close","volume"]].copy()
+        df.index = df.index.tz_localize('UTC')
+        dfOHL = df[["open","high","low","close","volume"]].copy()
         # new_index = calendar.sessions_in_range(df.index[0],df.index[-1])
-        dfOHLCV.index = dfOHLCV.index.tz_localize('UTC')
-        # dfOHLCV_new = dfOHLCV.reindex(new_index)
-        bar_data.append((sid,dfOHLCV))
+        # dfOHL_new = dfOHL.reindex(new_index)
+        bar_data.append((sid,dfOHL))
         if asset_df is None:
-            asset_df = pd.DataFrame([[ticker,dfOHLCV.index[0],dfOHLCV.index[-1]]],columns=['symbol','start_date','end_date'])
+            asset_df = pd.DataFrame([[ticker,dfOHL.index[0],dfOHL.index[-1]]],columns=['symbol','start_date','end_date'])
         else:
-            asset_df.loc[sid] = [ticker,dfOHLCV.index[0],dfOHLCV.index[-1]]
+            asset_df.loc[sid] = [ticker,dfOHL.index[0],dfOHL.index[-1]]
+
+        ## process split:
+        dfSplit = df[df['splitFactor']!=1].copy()
+        dfSplit = dfSplit.reset_index()
+        dfSplit['sid'] = sid
+        dfSplit['ratio'] = 1.0 / dfSplit['splitFactor']
+        dfSplit['effective_date'] = dfSplit['date']
+        dfSplit = dfSplit[["sid","ratio","effective_date"]].copy()
+
+        ## process dividends
+        dfDiv = df[df['divCash']!=0.0].copy()
+        dfDiv = dfDiv.reset_index()
+        dfDiv['sid'] = sid
+        dfDiv['amount'] = dfDiv['divCash']*1.0
+        dfDiv['ex_date'] = dfDiv['date']
+        dfDiv['record_date'] = dfDiv['date']
+        dfDiv['declared_date'] = dfDiv['date']
+        dfDiv['pay_date'] = dfDiv['date']
+        dfDiv = dfDiv[['sid', 'amount', 'ex_date', 'record_date', 'declared_date', 'pay_date']].copy()
+
         sid += 1
     
     ## Write bar_data and asset_df to DB
     asset_df['exchange'] = "NYSE"
     daily_bar_writer.write(bar_data,show_progress = True)
     asset_db_writer.write(equities=asset_df)
+    adjustment_writer.write(splits=dfSplit, dividends=dfDiv)
