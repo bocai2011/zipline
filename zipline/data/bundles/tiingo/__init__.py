@@ -7,7 +7,7 @@ from tiingo import TiingoClient
 from trading_calendars import get_calendar
 
 @bundles.register('tiingo')
-def quandl_bundle(environ,
+def ingest(environ,
                   asset_db_writer,
                   minute_bar_writer,
                   daily_bar_writer,
@@ -44,15 +44,22 @@ def quandl_bundle(environ,
     dfDiv = None
     sid = 0
     for ticker in tickers:
-        print ("Processing sid: " + str(sid) + " Symbol: " + ticker)
+        print ("Processing sid: " + str(sid) + " Symbol: " + ticker, end=" ")
         df = client.get_dataframe(ticker,
                             frequency='daily',
                             startDate=start_session.strftime("%Y-%m-%d"),
                             endDate=end_session.strftime("%Y-%m-%d"))
         df.index = df.index.tz_localize('UTC')
+        cal_index = calendar.sessions_in_range(df.index[0],df.index[-1])
+        if len(df.index) == len(cal_index):
+            print ("OK!")
+        else:
+            print ("Session mismatch!")
+            df = df.reindex(cal_index)
+            df.index.name = 'date'
+            df = df.fillna(method='ffill')
         dfOHL = df[["open","high","low","close","volume"]].copy()
-        # new_index = calendar.sessions_in_range(df.index[0],df.index[-1])
-        # dfOHL_new = dfOHL.reindex(new_index)
+
         bar_data.append((sid,dfOHL))
         if asset_df is None:
             asset_df = pd.DataFrame([[ticker,dfOHL.index[0],dfOHL.index[-1]]],columns=['symbol','start_date','end_date'])
