@@ -40,8 +40,8 @@ def ingest(environ,
     ## process ticker
     bar_data = []
     asset_df = None
-    dfSplit = None
-    dfDiv = None
+    div_df = None
+    split_df = None
     sid = 0
     for ticker in tickers:
         print ("Processing sid: " + str(sid) + " Symbol: " + ticker, end=" ")
@@ -59,7 +59,8 @@ def ingest(environ,
             df.index.name = 'date'
             df = df.fillna(method='ffill')
         dfOHL = df[["open","high","low","close","volume"]].copy()
-
+        if dfOHL['volume'].mean() == 0:
+            dfOHL['volume'] = 1e6
         bar_data.append((sid,dfOHL))
         if asset_df is None:
             asset_df = pd.DataFrame([[ticker,dfOHL.index[0],dfOHL.index[-1]]],columns=['symbol','start_date','end_date'])
@@ -73,6 +74,10 @@ def ingest(environ,
         dfSplit['ratio'] = 1.0 / dfSplit['splitFactor']
         dfSplit['effective_date'] = dfSplit['date']
         dfSplit = dfSplit[["sid","ratio","effective_date"]].copy()
+        if split_df is None:
+            split_df = dfSplit
+        else:
+            split_df = pd.concat([split_df,dfSplit])
 
         ## process dividends
         dfDiv = df[df['divCash']!=0.0].copy()
@@ -84,6 +89,10 @@ def ingest(environ,
         dfDiv['declared_date'] = dfDiv['date']
         dfDiv['pay_date'] = dfDiv['date']
         dfDiv = dfDiv[['sid', 'amount', 'ex_date', 'record_date', 'declared_date', 'pay_date']].copy()
+        if div_df is None:
+            div_df = dfDiv
+        else:
+            div_df = pd.concat([div_df,dfDiv])
 
         sid += 1
     
