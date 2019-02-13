@@ -100,4 +100,4 @@ def ingest(environ,
     asset_df['exchange'] = "NYSE"
     daily_bar_writer.write(bar_data,show_progress = True)
     asset_db_writer.write(equities=asset_df)
-    adjustment_writer.write(splits=dfSplit, dividends=dfDiv)
+    adjustment_writer.write(splits=split_df, dividends=div_df)
