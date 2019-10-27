@@ -12,14 +12,18 @@ from zipline.pipeline.data import Column, DataSet
 from zipline.pipeline.data.testing import TestingDataSet
 from zipline.pipeline.domain import (
     AmbiguousDomain,
+    AR_EQUITIES,
     AT_EQUITIES,
     AU_EQUITIES,
     BE_EQUITIES,
     BR_EQUITIES,
     BUILT_IN_DOMAINS,
     CA_EQUITIES,
-    CN_EQUITIES,
     CH_EQUITIES,
+    CL_EQUITIES,
+    CN_EQUITIES,
+    CO_EQUITIES,
+    CZ_EQUITIES,
     DE_EQUITIES,
     DK_EQUITIES,
     EquityCalendarDomain,
@@ -29,20 +33,34 @@ from zipline.pipeline.domain import (
     FR_EQUITIES,
     GB_EQUITIES,
     GENERIC,
+    GR_EQUITIES,
     HK_EQUITIES,
+    HU_EQUITIES,
+    ID_EQUITIES,
     IE_EQUITIES,
     IN_EQUITIES,
     infer_domain,
     IT_EQUITIES,
     JP_EQUITIES,
     KR_EQUITIES,
+    MX_EQUITIES,
+    MY_EQUITIES,
     NL_EQUITIES,
     NO_EQUITIES,
     NZ_EQUITIES,
+    PE_EQUITIES,
+    PH_EQUITIES,
+    PK_EQUITIES,
+    PL_EQUITIES,
     PT_EQUITIES,
+    RU_EQUITIES,
     SE_EQUITIES,
     SG_EQUITIES,
+    TH_EQUITIES,
+    TR_EQUITIES,
+    TW_EQUITIES,
     US_EQUITIES,
+    ZA_EQUITIES,
 )
 from zipline.pipeline.factors import CustomFactor
 import zipline.testing.fixtures as zf
@@ -117,9 +135,11 @@ class SpecializeTestCase(zf.ZiplineTestCase):
 
             # Specializations should be memoized.
             self.assertIs(specialized, cls.specialize(domain))
+            self.assertIs(specialized, specialized.specialize(domain))
 
-            # Specializations should have the same name.
+            # Specializations should have the same name and module
             assert_equal(specialized.__name__, cls.__name__)
+            assert_equal(specialized.__module__, cls.__module__)
             self.assertIs(specialized.domain, domain)
 
             for attr in colnames:
@@ -341,32 +361,50 @@ class DataQueryCutoffForSessionTestCase(zf.ZiplineTestCase):
     def test_built_in_equity_calendar_domain_defaults(self):
         # test the defaults
         expected_cutoff_times = {
+            AR_EQUITIES: datetime.time(10, 15),
             AT_EQUITIES: datetime.time(8, 15),
             AU_EQUITIES: datetime.time(9, 15),
             BE_EQUITIES: datetime.time(8, 15),
             BR_EQUITIES: datetime.time(9, 15),
             CA_EQUITIES: datetime.time(8, 45),
             CH_EQUITIES: datetime.time(8, 15),
+            CL_EQUITIES: datetime.time(8, 45),
             CN_EQUITIES: datetime.time(8, 45),
+            CO_EQUITIES: datetime.time(8, 45),
+            CZ_EQUITIES: datetime.time(8, 15),
             DE_EQUITIES: datetime.time(8, 15),
             DK_EQUITIES: datetime.time(8, 15),
             ES_EQUITIES: datetime.time(8, 15),
             FI_EQUITIES: datetime.time(9, 15),
             FR_EQUITIES: datetime.time(8, 15),
             GB_EQUITIES: datetime.time(7, 15),
+            GR_EQUITIES: datetime.time(9, 15),
             HK_EQUITIES: datetime.time(9, 15),
+            HU_EQUITIES: datetime.time(8, 15),
+            ID_EQUITIES: datetime.time(8, 15),
             IE_EQUITIES: datetime.time(7, 15),
             IN_EQUITIES: datetime.time(8, 30),
             IT_EQUITIES: datetime.time(8, 15),
             JP_EQUITIES: datetime.time(8, 15),
             KR_EQUITIES: datetime.time(8, 15),
+            MX_EQUITIES: datetime.time(7, 45),
+            MY_EQUITIES: datetime.time(8, 15),
             NL_EQUITIES: datetime.time(8, 15),
             NO_EQUITIES: datetime.time(8, 15),
             NZ_EQUITIES: datetime.time(9, 15),
+            PE_EQUITIES: datetime.time(8, 15),
+            PH_EQUITIES: datetime.time(8, 45),
+            PK_EQUITIES: datetime.time(8, 47),
+            PL_EQUITIES: datetime.time(8, 15),
             PT_EQUITIES: datetime.time(7, 15),
+            RU_EQUITIES: datetime.time(9, 15),
             SE_EQUITIES: datetime.time(8, 15),
             SG_EQUITIES: datetime.time(8, 15),
+            TH_EQUITIES: datetime.time(9, 15),
+            TR_EQUITIES: datetime.time(9, 15),
+            TW_EQUITIES: datetime.time(8, 15),
             US_EQUITIES: datetime.time(8, 45),
+            ZA_EQUITIES: datetime.time(8, 15),
         }
 
         # make sure we are not missing any domains in this test
@@ -566,3 +604,8 @@ class RollForwardTestCase(zf.ZiplineTestCase):
             session_domain.roll_forward('2000-02-02'),
             pd.Timestamp('2000-04-01', tz='UTC'),
         )
+
+
+class ReprTestCase(zf.ZiplineTestCase):
+    def test_generic_domain_repr(self):
+        self.assertEqual(repr(GENERIC), "GENERIC")
